@@ -3,7 +3,7 @@
 weather mini project py and flask
 
 ```bash
-$ pip install Flask
+$ pip install flask
 $ pip install requests
 $ pip install wordcloud
 ```

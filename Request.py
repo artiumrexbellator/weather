@@ -1,11 +1,11 @@
 import requests
 import json
 import datetime
-import os
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 from PIL import Image
-
+from os.path import join, dirname, abspath, exists
+from os import mkdir, remove
 class Request: 
   def __init__(self, station, date):
     if station != None:
@@ -20,14 +20,14 @@ class Request:
   def getRawData(self):
     data=[]
     try:
-        path=os.path.join(os.path.dirname(os.path.abspath(__file__)),"data")
-        f=open(path+'/'+self.station+"_"+self.date+".json","r")
-        data=json.load(f)
-        f.close()
+        path = f"{join(dirname(abspath(__file__)),'data')}/{self.station}_{self.date}.json"
+        file = open(path,"r")
+        data = json.load(file)
+        file.close()
         return data
     except Exception:
-        r=requests.get("https://public.opendatasoft.com/api/records/1.0/search/?dataset=donnees-synop-essentielles-omm&q=&refine.nom="+self.station+"&refine.date="+self.date+"&sort=date")
-        data=r.json()
+        url=f"https://public.opendatasoft.com/api/records/1.0/search/?dataset=donnees-synop-essentielles-omm&q=&refine.nom={self.station}&refine.date={self.date}&sort=date"
+        data = requests.get(url).json()
         if len(data['records'])>0:
             #save data in a json file
             self.saveData(data)
@@ -59,40 +59,41 @@ class Request:
           print('no data for station '+str(self.station)+" at "+str(self.date))
   
   def saveData(self,data):
-      dir="data"
       mode = 0o666
-      path=os.path.join(os.path.dirname(os.path.abspath(__file__)),dir)
+      path=join(dirname(abspath(__file__)),'data')
+
       try:
-          os.mkdir(path,mode)
+        mkdir(path, mode)
       except FileExistsError:
-          pass
-      f=open(path+'/'+self.station+"_"+self.date+".json","w")
-      json.dump(data,f)
-      f.close()
+        pass
+      
+      file=open(f"{path}/{self.station}_{self.date}.json","w")
+      json.dump(data,file)
+      file.close()
   
   @staticmethod
   def stations():
-      r=requests.get("https://public.opendatasoft.com/api/records/1.0/search/?dataset=donnees-synop-essentielles-omm&q=&facet=nom")
-      data=r.json()
-      facets=data["facet_groups"][0]["facets"]
-      names=[]
-      for facet in facets:
-          names.append(facet['name'])
-      return names
+    url="https://public.opendatasoft.com/api/records/1.0/search/?dataset=donnees-synop-essentielles-omm&q=&facet=nom"
+    data=requests.get(url).json()
+    facets=data["facet_groups"][0]["facets"]
+    names=[]
+    for facet in facets:
+        names.append(facet['name'])
+    return names
   
   def savePlot(self):
       #Create folder of images
       dir="plots"
       mode = 0o666
-      pathImg=os.path.join(os.path.dirname(os.path.abspath(__file__))+'/static',dir)
+      pathImg=join(dirname(abspath(__file__))+'/static',dir)
       try:
-          os.mkdir(pathImg,mode)
+          mkdir(pathImg,mode)
       except FileExistsError:
           pass
       
       #read from json file
       dir="data"
-      path=os.path.join(os.path.dirname(os.path.abspath(__file__)),dir)
+      path=join(dirname(abspath(__file__)),dir)
       try:
           f=open(path+'/'+self.station+"_"+self.date+".json","r")
           data=json.load(f)
@@ -120,14 +121,14 @@ class Request:
           pass
   
   def checkPlot(self):
-      pathImg=os.path.join(os.path.dirname(os.path.abspath(__file__))+'/static','plots')
-      if not os.path.exists(pathImg+'/'+self.station+"_"+self.date+".png"):
+      pathImg=join(dirname(abspath(__file__))+'/static','plots')
+      if not exists(pathImg+'/'+self.station+"_"+self.date+".png"):
           self.savePlot()
   
   def plot(self):
           try:
               self.checkPlot()
-              pathImg=os.path.join(os.path.dirname(os.path.abspath(__file__))+'/static','plots')
+              pathImg=join(dirname(abspath(__file__))+'/static','plots')
               image=Image.open(pathImg+'/'+self.station+"_"+self.date+".png")
               image.show()
           except Exception:
@@ -137,14 +138,14 @@ class Request:
       #Create folder of wordCloud images
       dir="wordClouds"
       mode = 0o666
-      pathImg=os.path.join(os.path.dirname(os.path.abspath(__file__))+'/static',dir)
+      pathImg=join(dirname(abspath(__file__))+'/static',dir)
       try:
-          os.mkdir(pathImg,mode)
+          mkdir(pathImg,mode)
       except FileExistsError:
           pass
       exclure_words = ['d', 'du', 'de', 'la', 'des', 'le', 'et', 'est', 'elle', 'une', 'en', 'que', 'aux', 'qui', 'ces', 'les', 'dans', 'sur', 'l', 'un', 'pour', 'par', 'il', 'ou', 'à', 'ce', 'a', 'sont', 'cas', 'plus', 'leur', 'se', 's', 'vous', 'au', 'c', 'aussi', 'toutes', 'autre', 'comme']
       dir="data"
-      path=os.path.join(os.path.dirname(os.path.abspath(__file__)),dir)
+      path=join(dirname(abspath(__file__)),dir)
       text=""
       try:
           f=open(path+'/'+self.station+"_"+self.date+".json","r")
@@ -162,21 +163,21 @@ class Request:
               except Exception:
                   pass
           wordcloud = WordCloud(background_color = 'white', stopwords = exclure_words, max_words = 80,width=1600, height=800).generate(text)
-          if os.path.exists(pathImg+'/'+self.station+"_"+self.date+".png"):
-              os.remove(pathImg+'/'+self.station+"_"+self.date+".png")
+          if exists(pathImg+'/'+self.station+"_"+self.date+".png"):
+              remove(pathImg+'/'+self.station+"_"+self.date+".png")
           wordcloud.to_file(pathImg+'/'+self.station+"_"+self.date+".png")    
       except Exception:
           pass        
   
   def checkWordCloud(self):
-      pathImg=os.path.join(os.path.dirname(os.path.abspath(__file__))+'/static','wordClouds')
-      if not os.path.exists(pathImg+'/'+self.station+"_"+self.date+".png"):
+      pathImg=join(dirname(abspath(__file__))+'/static','wordClouds')
+      if not exists(pathImg+'/'+self.station+"_"+self.date+".png"):
           self.saveWordCloud()
   
   def wordCloud(self):
       try:
           self.checkWordCloud()
-          pathImg=os.path.join(os.path.dirname(os.path.abspath(__file__))+'/static','wordClouds')
+          pathImg=join(dirname(abspath(__file__))+'/static','wordClouds')
           image=Image.open(pathImg+'/'+self.station+"_"+self.date+".png")
           image.show()
       except Exception:
