@@ -18,6 +18,7 @@ def index():
             return render_template('404.html',station="",date="")
     else:
         return render_template('index.html',station="",date="",stations=Request.stations(),records=[])
+
 @app.route('/download')
 def download():
     station=request.args.get("station")
