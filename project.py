@@ -10,10 +10,10 @@ while selection != '!qa':
     elif selection == 'p':
         req.plot()
     elif selection != '!qa':
-        # station=input("please type the station : ")
-        # date=input("please enter the date in following format YYYY-mm-dd : ")
-        station='ROUEN-BOOS'
-        date='2019-2-20'
+        station=input("please type the station : ")
+        date=input("please enter the date in following format YYYY-mm-dd : ")
+        #station='ROUEN-BOOS'
+        #date='2019-2-20'
         try:
           req=Request(station,date)
         except Exception as e:
